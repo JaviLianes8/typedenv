@@ -72,8 +72,10 @@ agree with both. The existing options each give up one of those or pull in depen
 
 `typedenv` is one small module, has no runtime dependencies, ships `py.typed`, and uses
 `@overload` so `env.int("X")` is `int`, `env.int("X", None)` is `int | None`, and
-`env.int("X", required=True)` is `int`, with no casts at the call site. Reach for it when
-you want typed environment access without adding a settings framework to the project.
+`env.int("X", required=True)` is `int`, with no casts at the call site. Each type has its
+own getter rather than a single `cast=` callback, booleans understand the usual spellings,
+and every error names the variable it read. Reach for it when you want typed environment
+access without adding a settings framework to the project.
 
 ## License
 
