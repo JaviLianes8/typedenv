@@ -21,7 +21,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "pytest", "build", "twine"]
+dev = ["ruff", "mypy", "pytest", "build", "twine", "typing_extensions"]
 
 [project.urls]
 Homepage = "https://lianes8studio.com"
