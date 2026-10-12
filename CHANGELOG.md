@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+
+- `load(cls, source=None)` fills a plain dataclass from the environment: field name
+  upper-cased as the variable name, the annotation as the parser, a default,
+  `default_factory` or `X | None` making it optional. Every field is read first and all
+  failures are raised together as `EnvValidationError` (its `errors` tuple holds each one).
+- `var(name, default=, default_factory=, separator=, secret=)`, a `field()` replacement
+  for fields that need a different name, a list separator or masking.
+- Settings fields may be `str`, `int`, `float`, `bool`, `Decimal`, `Path`, `timedelta`,
+  `Secret`, any `Enum`, `Literal[...]` of strings, `dict[...]` (a JSON object), and
+  `list[X]` / `tuple[X, ...]` of a scalar type.
+- New getters, each with the same typed overloads as the 0.1 ones: `decimal` (finite
+  only), `path`, `duration` (`90`, `250ms`, `1h30m`, `1.5h` into `timedelta`), `enum`
+  (member name in any case, or value) and `secret`.
+- `secret=True` on every getter keeps the value out of the error message, its `value`
+  attribute and the exception chain. `Secret` masks itself in `str`, `repr` and
+  f-strings, compares in constant time and refuses pickling.
+- `Env(prefix=...)` and `Env.prefixed()` scope names; errors name the full variable.
+- `Env(empty_is_unset=True)` treats `KEY=` as unset; `Env.raw()`, `Env.is_set()`,
+  `in`, `Env.source`, `Env.full_name()` and a repr that never shows values.
+- `.env` support as a documented subset of python-dotenv 1.x: `parse_dotenv`,
+  `read_dotenv` and `load_dotenv(path, override=False)`, raising `DotenvError` (file and
+  line, never the value) for anything outside the subset. On Windows, `load_dotenv`
+  refuses entries longer than the 32,767 characters the process environment accepts.
+- `typedenv` command (also `python -m typedenv`): `check` validates a spec file or a
+  `module:Class` dataclass against the environment with text or JSON output, and `get`
+  prints one parsed value. Both take `--prefix`, `--env-file` and `--empty-is-unset`.
+- `InvalidEnvError` gains `reason`, `secret`, `detail` and `masked()`.
+
+### Changed
+
+- `bool` also accepts `enable`/`enabled` and `disable`/`disabled`, matching boolish.
+- Very long values are trimmed in error messages; the `value` attribute keeps them whole.
+- JSON errors report the line and column.
+
+### Fixed
+
+- `str(MissingEnvError(...))` no longer wraps the message in an extra pair of quotes.
+
 ## [0.1.0]
 
 ### Added

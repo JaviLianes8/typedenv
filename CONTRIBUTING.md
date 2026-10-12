@@ -11,9 +11,13 @@ pip install -r requirements-dev.txt
 ## Before you open a pull request
 
 - Keep public API in `src/typedenv/__init__.py`; internals live in `_`-prefixed modules.
-- Add a test for the behaviour you change. Tests inject time, disk and network; they
-  never touch the real thing.
-- Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes.
+- Add a test for the behaviour you change, and extend `tests/test_contract.py` when the
+  public API changes. Behaviour that depends on the operating system is tested in real
+  child processes with a crafted `env=` (see `tests/procs.py`), not with mocks.
+- Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes. The end
+  to end test builds a wheel and installs it into a throwaway virtual environment; skip
+  it while iterating with `pytest -m "not e2e"`.
+- Keep every source file at 200 lines or fewer.
 - One logical change per commit, imperative subject line.
 
 Open an issue first if the change is large or shifts the public API.

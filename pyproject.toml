@@ -4,24 +4,36 @@ build-backend = "hatchling.build"
 
 [project]
 name = "typedenv"
-version = "0.1.0"
-description = "Tiny typed reader for environment variables with mypy-inferred return types, zero dependencies"
+version = "0.2.0"
+description = "Typed reader for environment variables: inferred return types, settings dataclasses, .env files and a checker CLI, zero dependencies"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Javier Lianes", email = "javier@lianes8studio.com" }]
-keywords = []
+keywords = ["environment", "env", "environment-variables", "settings", "config", "dotenv", "typed", "12factor"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Systems Administration",
     "Typing :: Typed",
 ]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "pytest", "build", "twine", "typing_extensions"]
+dev = ["ruff", "mypy", "pytest", "build", "twine", "typing_extensions", "python-dotenv"]
+
+[project.scripts]
+typedenv = "typedenv._cli:main"
 
 [project.urls]
 Homepage = "https://lianes8studio.com"
@@ -41,11 +53,17 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.flake8-bugbear]
+# var() returns a dataclasses.field(), like field() itself.
+extend-immutable-calls = ["typedenv.var"]
+
 [tool.mypy]
 python_version = "3.10"
 strict = true
+mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+markers = ["e2e: builds a wheel and drives the installed console script"]

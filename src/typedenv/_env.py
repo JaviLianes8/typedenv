@@ -2,147 +2,135 @@
 
 from __future__ import annotations
 
-import os
 from builtins import bool as _bool
 from builtins import float as _float
 from builtins import int as _int
 from builtins import list as _list
 from builtins import str as _str
-from collections.abc import Callable, Mapping
-from typing import Any, Literal, TypeVar, cast, overload
+from typing import Any, Literal, overload
 
-from ._errors import MissingEnvError
-from ._parsers import parse_bool, parse_float, parse_int, parse_json, parse_list
+from ._parsers import parse_bool, parse_float, parse_int, parse_json, parse_list, parse_str
+from ._reader import MISSING
+from ._rich import RichGetters
 
 # The getters are named after the builtin types (env.int, env.str, ...), which shadows
 # those names inside the class body, so annotations use these module-level aliases.
 
-T = TypeVar("T")
 
-
-class _Missing:
-    """Sentinel telling "no argument given" apart from an explicit None default."""
-
-
-_MISSING = _Missing()
-
-
-def _identity(name: _str, raw: _str) -> _str:
-    return raw
-
-
-class Env:
+class Env(RichGetters):
     """Read environment variables as typed values.
 
     Each getter is overloaded so the static type follows the call: with no default
     and no ``required=`` the result is non-optional and a missing variable raises;
     passing ``None`` or ``required=False`` widens the result to include ``None``.
+    ``secret=True`` keeps the value out of any error message.
     """
 
-    def __init__(self, source: Mapping[_str, _str] | None = None) -> None:
-        self._source = source if source is not None else os.environ
-
-    def _get(
-        self,
-        name: _str,
-        parser: Callable[[_str, _str], T],
-        default: Any,
-        required: Any,
-    ) -> T | None:
-        raw = self._source.get(name)
-        if raw is not None:
-            return parser(name, raw)
-        if required is True:
-            raise MissingEnvError(name)
-        if default is not _MISSING:
-            return cast("T | None", default)
-        if required is False:
-            return None
-        raise MissingEnvError(name)
+    @overload
+    def str(self, name: _str, *, secret: _bool = ...) -> _str: ...
+    @overload
+    def str(self, name: _str, default: _str, *, secret: _bool = ...) -> _str: ...
+    @overload
+    def str(self, name: _str, default: None, *, secret: _bool = ...) -> _str | None: ...
+    @overload
+    def str(self, name: _str, *, required: Literal[True], secret: _bool = ...) -> _str: ...
+    @overload
+    def str(self, name: _str, *, required: Literal[False], secret: _bool = ...) -> _str | None: ...
+    def str(
+        self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
+    ) -> _str | None:
+        """Return the raw value; an empty value is returned as ``""``."""
+        return self._get(name, parse_str, default, required, secret)
 
     @overload
-    def str(self, name: _str) -> _str: ...
+    def int(self, name: _str, *, secret: _bool = ...) -> _int: ...
     @overload
-    def str(self, name: _str, default: _str) -> _str: ...
+    def int(self, name: _str, default: _int, *, secret: _bool = ...) -> _int: ...
     @overload
-    def str(self, name: _str, default: None) -> _str | None: ...
+    def int(self, name: _str, default: None, *, secret: _bool = ...) -> _int | None: ...
     @overload
-    def str(self, name: _str, *, required: Literal[True]) -> _str: ...
+    def int(self, name: _str, *, required: Literal[True], secret: _bool = ...) -> _int: ...
     @overload
-    def str(self, name: _str, *, required: Literal[False]) -> _str | None: ...
-    def str(self, name: _str, default: Any = _MISSING, *, required: Any = _MISSING) -> _str | None:
-        return self._get(name, _identity, default, required)
+    def int(self, name: _str, *, required: Literal[False], secret: _bool = ...) -> _int | None: ...
+    def int(
+        self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
+    ) -> _int | None:
+        """Parse what ``int()`` accepts in base 10 (``1_000`` too), ignoring whitespace."""
+        return self._get(name, parse_int, default, required, secret)
 
     @overload
-    def int(self, name: _str) -> _int: ...
+    def float(self, name: _str, *, secret: _bool = ...) -> _float: ...
     @overload
-    def int(self, name: _str, default: _int) -> _int: ...
+    def float(self, name: _str, default: _float, *, secret: _bool = ...) -> _float: ...
     @overload
-    def int(self, name: _str, default: None) -> _int | None: ...
+    def float(self, name: _str, default: None, *, secret: _bool = ...) -> _float | None: ...
     @overload
-    def int(self, name: _str, *, required: Literal[True]) -> _int: ...
+    def float(self, name: _str, *, required: Literal[True], secret: _bool = ...) -> _float: ...
     @overload
-    def int(self, name: _str, *, required: Literal[False]) -> _int | None: ...
-    def int(self, name: _str, default: Any = _MISSING, *, required: Any = _MISSING) -> _int | None:
-        return self._get(name, parse_int, default, required)
-
-    @overload
-    def float(self, name: _str) -> _float: ...
-    @overload
-    def float(self, name: _str, default: _float) -> _float: ...
-    @overload
-    def float(self, name: _str, default: None) -> _float | None: ...
-    @overload
-    def float(self, name: _str, *, required: Literal[True]) -> _float: ...
-    @overload
-    def float(self, name: _str, *, required: Literal[False]) -> _float | None: ...
     def float(
-        self, name: _str, default: Any = _MISSING, *, required: Any = _MISSING
+        self, name: _str, *, required: Literal[False], secret: _bool = ...
+    ) -> _float | None: ...
+    def float(
+        self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
     ) -> _float | None:
-        return self._get(name, parse_float, default, required)
+        """Parse anything Python's ``float()`` accepts, ignoring surrounding whitespace."""
+        return self._get(name, parse_float, default, required, secret)
 
     @overload
-    def bool(self, name: _str) -> _bool: ...
+    def bool(self, name: _str, *, secret: _bool = ...) -> _bool: ...
     @overload
-    def bool(self, name: _str, default: _bool) -> _bool: ...
+    def bool(self, name: _str, default: _bool, *, secret: _bool = ...) -> _bool: ...
     @overload
-    def bool(self, name: _str, default: None) -> _bool | None: ...
+    def bool(self, name: _str, default: None, *, secret: _bool = ...) -> _bool | None: ...
     @overload
-    def bool(self, name: _str, *, required: Literal[True]) -> _bool: ...
+    def bool(self, name: _str, *, required: Literal[True], secret: _bool = ...) -> _bool: ...
     @overload
-    def bool(self, name: _str, *, required: Literal[False]) -> _bool | None: ...
     def bool(
-        self, name: _str, default: Any = _MISSING, *, required: Any = _MISSING
+        self, name: _str, *, required: Literal[False], secret: _bool = ...
+    ) -> _bool | None: ...
+    def bool(
+        self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
     ) -> _bool | None:
-        return self._get(name, parse_bool, default, required)
+        """Accept true/false, yes/no, on/off, 1/0, y/n, t/f, enable(d)/disable(d), any case."""
+        return self._get(name, parse_bool, default, required, secret)
 
     @overload
-    def list(self, name: _str, *, separator: _str = ",") -> _list[_str]: ...
-    @overload
-    def list(self, name: _str, default: _list[_str], *, separator: _str = ",") -> _list[_str]: ...
-    @overload
-    def list(self, name: _str, default: None, *, separator: _str = ",") -> _list[_str] | None: ...
+    def list(self, name: _str, *, separator: _str = ",", secret: _bool = ...) -> _list[_str]: ...
     @overload
     def list(
-        self, name: _str, *, required: Literal[True], separator: _str = ","
+        self, name: _str, default: _list[_str], *, separator: _str = ",", secret: _bool = ...
     ) -> _list[_str]: ...
     @overload
     def list(
-        self, name: _str, *, required: Literal[False], separator: _str = ","
+        self, name: _str, default: None, *, separator: _str = ",", secret: _bool = ...
+    ) -> _list[_str] | None: ...
+    @overload
+    def list(
+        self, name: _str, *, required: Literal[True], separator: _str = ",", secret: _bool = ...
+    ) -> _list[_str]: ...
+    @overload
+    def list(
+        self, name: _str, *, required: Literal[False], separator: _str = ",", secret: _bool = ...
     ) -> _list[_str] | None: ...
     def list(
         self,
         name: _str,
-        default: Any = _MISSING,
+        default: Any = MISSING,
         *,
-        required: Any = _MISSING,
+        required: Any = MISSING,
         separator: _str = ",",
+        secret: _bool = False,
     ) -> _list[_str] | None:
-        return self._get(name, lambda n, raw: parse_list(n, raw, separator), default, required)
+        """Split on ``separator`` and trim each item; an empty value is ``[]``."""
+        return self._get(
+            name, lambda n, raw: parse_list(n, raw, separator), default, required, secret
+        )
 
-    def json(self, name: _str, default: Any = _MISSING, *, required: Any = _MISSING) -> Any:
+    def json(
+        self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
+    ) -> Any:
         """Parse the value as JSON. Return type is Any, so annotate the call site."""
-        return self._get(name, parse_json, default, required)
+        return self._get(name, parse_json, default, required, secret)
 
 
 env = Env()
