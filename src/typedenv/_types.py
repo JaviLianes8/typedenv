@@ -50,7 +50,16 @@ def split_parser(item: Parser, separator: str, kind: Callable[[list[Any]], Any])
     """Build a parser that splits on ``separator`` and parses every item."""
 
     def parse(name: str, raw: str) -> Any:
-        return kind([item(name, part) for part in split_list(raw, separator)])
+        values = []
+        for index, part in enumerate(split_list(raw, separator), start=1):
+            try:
+                values.append(item(name, part))
+            except InvalidEnvError as exc:
+                # The reason must never quote the item: masking keeps the reason.
+                why = f"item {index} is not a valid {exc.type_name}"
+                why += f" ({exc.reason})" if exc.reason else ""
+                raise InvalidEnvError(name, raw, "list", why) from None
+        return kind(values)
 
     return parse
 

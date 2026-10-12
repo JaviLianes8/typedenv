@@ -55,7 +55,7 @@ class Env(RichGetters):
     def int(
         self, name: _str, default: Any = MISSING, *, required: Any = MISSING, secret: _bool = False
     ) -> _int | None:
-        """Parse a base-10 integer, ignoring surrounding whitespace."""
+        """Parse what ``int()`` accepts in base 10 (``1_000`` too), ignoring whitespace."""
         return self._get(name, parse_int, default, required, secret)
 
     @overload

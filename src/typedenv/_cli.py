@@ -39,6 +39,7 @@ spec file format (one variable per line, # starts a comment):
 
 check exits 0 when every variable is valid and 1 otherwise; values are only printed
 with --show-values, and secrets never are. Errors go to stderr with exit code 1.
+module:Class is imported with the current directory added to the import path.
 """
 
 
@@ -132,7 +133,7 @@ def _get(args: argparse.Namespace) -> int:
         raise outcome.error
     value = outcome.value
     if outcome.status == "unset":
-        value = parse_value(parser, outcome.full_name, args.default, args.secret)
+        value = parse_value(parser, f"--default for {outcome.full_name}", args.default, args.secret)
     print("\n".join(value) if isinstance(value, list) else canonical(value))
     return 0
 

@@ -53,7 +53,10 @@ def specs_for(cls: type[Any]) -> list[VarSpec]:
     """Build one spec per init field of the dataclass ``cls``."""
     if not (isinstance(cls, type) and dataclasses.is_dataclass(cls)):
         raise TypeError(f"expected a dataclass type, got {cls!r}")
-    hints = get_type_hints(cls)
+    try:
+        hints = get_type_hints(cls)
+    except NameError as exc:
+        raise TypeError(f"cannot resolve the annotations of {cls.__qualname__}: {exc}") from None
     return [_spec(field, hints[field.name]) for field in dataclasses.fields(cls) if field.init]
 
 

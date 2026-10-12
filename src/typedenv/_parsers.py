@@ -87,6 +87,9 @@ def parse_json(name: str, raw: str) -> Any:
     except _json.JSONDecodeError as exc:
         reason = f"{exc.msg} at line {exc.lineno} column {exc.colno}"
         raise InvalidEnvError(name, raw, "JSON", reason) from None
+    except (ValueError, RecursionError):
+        # Integers past the digit limit and pathologically deep nesting land here.
+        raise InvalidEnvError(name, raw, "JSON", "too large or too deeply nested") from None
 
 
 def parse_enum(name: str, raw: str, enum_type: type[E]) -> E:
